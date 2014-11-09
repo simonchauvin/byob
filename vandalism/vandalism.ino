@@ -43,6 +43,8 @@ int distilledMelody[300];
 int actualMelodyLength;
 int actualDistilledMelodyLength;
 int currentNoteToPlayInLoop;
+int lastNotePosition;
+
 
 // the setup routine runs once when you press reset:
 void setup()
@@ -276,6 +278,10 @@ void setPlaybackState()
       }
     }
     lastNote = recordedMelody[i];
+    if(recordedMelody[i] > 0)
+    {
+      lastNotePosition = i;
+    }
   }
   
   Serial.println("END OF SETTING PLAYBACK");
@@ -287,7 +293,9 @@ void playbackState()
   //timeCounter += currentTime - lastTime;
   stepCounter++;
   //if (timeCounter >= melodyLength)
-  if (stepCounter >= actualMelodyLength)
+  
+  //if (stepCounter >= actualMelodyLength)
+  if(stepCounter >= lastNotePosition)
   {
     setChallengeState();
     return;
@@ -431,15 +439,45 @@ void setWinWaitState()
 {
   state = WINWAIT_STATE;
   stepCounter = 0;
+  
+
 }
 
 void winWaitState()
 {
   stepCounter++;  
-  if(stepCounter > 2000)
+  
+  currentNoteToPlayInLoop =-1;
+  for (int i = 0; i < sizeof(buttons) / sizeof(int); i++)
+  {
+    int buttonState = digitalRead(buttons[i]);
+    if (buttonState == LOW)
+    {
+      ledStates[i] = true;
+      currentNoteToPlayInLoop = i;
+      //audio.pitch = 1 + (musicScale[i] * 1f/12f);
+      //timeCounter = 0;
+      stepCounter = 0;
+      pushed[i] = true;
+      Serial.println("RESET TIME COUNTER");
+    }
+    else
+    {
+      ledStates[i] = false;
+      pushed[i] = false;
+    }
+   
+  }
+  updateAll();  
+  
+  
+  
+  if(stepCounter > 30)
   {
     setWinState();
   }
+  
+  
 }
 
 void setWinState()
