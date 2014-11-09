@@ -1,4 +1,5 @@
 #include <Console.h>
+#include <EEPROM.h>
 
 //int noteFrequencies[] = { 3830, 3400, 3038, 2864, 2550, 2272};
 int noteFrequencies[] = { 1915, 1700, 1519, 1432, 1275, 1136, 1014, 956 };
@@ -46,12 +47,11 @@ void setup()
   // LEDs
   for (int i = 0; i < sizeof(leds) / sizeof(int); i++)
   {
-    
     if(i == 1)
     {
-       pinMode(0, OUTPUT);
-       leds[i] = 0;
-       digitalWrite(0,LOW);
+       leds[i] = 10;
+       pinMode(leds[i], OUTPUT);
+       digitalWrite(leds[i],LOW);
     }
     else
     {
@@ -63,7 +63,14 @@ void setup()
   // Buttons
   for (int i = 0; i < sizeof(buttons) / sizeof(int); i++)
   {
-    buttons[i] = i + 8;
+    if (i == 2)
+    {
+      buttons[i] = 0;
+    }
+    else
+    {
+      buttons[i] = i + 8;
+    }
     pinMode(buttons[i], INPUT_PULLUP);
   }
 
@@ -72,7 +79,16 @@ void setup()
   
   actualMelodyLength = melodyLength * fidelity;
   
-  // Start recording
+  // Start recording if nothing is on memory, playback if there's anything
+  /*if (EEPROM.read(0) == 1)
+  {
+    readMelodyFromMemory();
+    setPlaybackState();
+  }
+  else
+  {
+    setRecordState();
+  }*/
   setRecordState();
 }
 
@@ -181,6 +197,7 @@ void recordState()
   //if (timeCounter >= melodyLength)
   if (stepCounter >= actualMelodyLength)
   {
+    //writeMelodyToMemory();
     setPlaybackState();
     return;
   }
@@ -437,4 +454,25 @@ void winState()
       setRecordState();
   }
   updateAll();
+}
+
+void writeMelodyToMemory()
+{
+  // Signals that there's a melody present
+  EEPROM.write(0, 1);
+  
+  int melodySize = actualMelodyLength * fidelity;
+  for (int i = 1; i <= melodySize; i++)
+  {
+    EEPROM.write(i, recordedMelody[i - 1]);
+  }
+}
+
+void readMelodyFromMemory()
+{
+  int melodySize = actualMelodyLength * fidelity;
+  for (int i = 1; i <= melodySize; i++)
+  {
+    recordedMelody[i - 1] = EEPROM.read(i);
+  }
 }
