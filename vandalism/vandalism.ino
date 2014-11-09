@@ -2,7 +2,11 @@
 #include <EEPROM.h>
 
 //int noteFrequencies[] = { 3830, 3400, 3038, 2864, 2550, 2272};
-int noteFrequencies[] = { 1915, 1700, 1519, 1432, 1275, 1136, 1014, 956 };
+//int noteFrequencies[] = { 262, 294, 330, 370, 415, 466, 1014, 956 };
+//int noteFrequencies[] = { 277, 311, 349, 370, 440, 470, 1014, 956 };
+//int noteFrequencies[] = { 1915, 1700, 1519, 1432, 1275, 1136, 1014, 956 };
+int noteFrequencies[] = { 1047, 1109, 1319, 1397, 1568, 1661, 1014, 956 };
+//int noteFrequencies[] = { 1915, 1700, 1519, 1432, 1275, 1136, 1014, 956 };
 //int noteFrequencies[6];
 // State names
 int RECORD_STATE = 0;
@@ -79,17 +83,21 @@ void setup()
   
   actualMelodyLength = melodyLength * fidelity;
   
+  // Clean memory
+  //EEPROM.write(0, 155);
+  
   // Start recording if nothing is on memory, playback if there's anything
-  /*if (EEPROM.read(0) == 1)
+  if (EEPROM.read(0) == 1)
   {
     readMelodyFromMemory();
     setPlaybackState();
+    Serial.print("READING FROM MEMORY");
   }
   else
   {
     setRecordState();
-  }*/
-  setRecordState();
+  }
+  //setRecordState();
 }
 
 // the loop routine runs over and over again forever:
@@ -133,13 +141,16 @@ void loop()
       //Serial.print("WIN STATE");
       winState();
     }
-    
+
     //Serial.print(".");
     
     // Save time before the next tick
     //lastTime = currentTime;
   //}
-  delay(((1000)/fps) - (millis() - currentTime));
+  if (1000 / fps > (millis() - currentTime))
+  {
+    delay(((1000)/fps) - (millis() - currentTime));
+  }
   
   //lastLoopTime = currentTime;
 }
@@ -197,7 +208,7 @@ void recordState()
   //if (timeCounter >= melodyLength)
   if (stepCounter >= actualMelodyLength)
   {
-    //writeMelodyToMemory();
+    writeMelodyToMemory();
     setPlaybackState();
     return;
   }
@@ -261,10 +272,13 @@ void setPlaybackState()
     }
     lastNote = recordedMelody[i];
   }
+  
+  Serial.println("END OF SETTING PLAYBACK");
 }
 
 void playbackState()
 {
+  Serial.println("IN PLAYBACK STATE");
   //timeCounter += currentTime - lastTime;
   stepCounter++;
   //if (timeCounter >= melodyLength)
@@ -275,7 +289,7 @@ void playbackState()
   }
 
   //audio.Pause();
-  currentNoteToPlayInLoop =-1;
+  currentNoteToPlayInLoop = -1;
   for (int i = 0; i < sizeof(buttons) / sizeof(int); i++)
   {
     ledStates[i] = false;
@@ -409,7 +423,6 @@ void setWinState()
 {
       Serial.println("GOING TO WIN STATE");
 
-  
   state = WIN_STATE;
   //timeCounter = 0;
   stepCounter = 0;
@@ -451,6 +464,8 @@ void winState()
 
   if (currentNote >= 5)
   {
+      // Clean memory
+      EEPROM.write(0, 155);
       setRecordState();
   }
   updateAll();
@@ -461,18 +476,17 @@ void writeMelodyToMemory()
   // Signals that there's a melody present
   EEPROM.write(0, 1);
   
-  int melodySize = actualMelodyLength * fidelity;
-  for (int i = 1; i <= melodySize; i++)
+  for (int i = 1; i <= actualMelodyLength; i++)
   {
-    EEPROM.write(i, recordedMelody[i - 1]);
+    int val = recordedMelody[i - 1];
+    EEPROM.write(i, (val >> 0) & 0xFF);
   }
 }
 
 void readMelodyFromMemory()
 {
-  int melodySize = actualMelodyLength * fidelity;
-  for (int i = 1; i <= melodySize; i++)
+  for (int i = 1; i <= actualMelodyLength; i++)
   {
-    recordedMelody[i - 1] = EEPROM.read(i);
+    recordedMelody[i - 1] = (EEPROM.read(i) << 0) & 0xFF;
   }
 }
