@@ -13,6 +13,7 @@ int RECORD_STATE = 0;
 int PLAYBACK_STATE = 1;
 int CHALLENGE_STATE = 2;
 int WIN_STATE = 3;
+int WINWAIT_STATE = 4;
 
 // Actual pins
 int leds[6];
@@ -135,6 +136,10 @@ void loop()
     {
       //Serial.print("CHALLENGE STATE");
       challengeState();
+    }
+    else if(state == WINWAIT_STATE)
+    {
+      winWaitState();
     }
     else if (state == WIN_STATE)
     {
@@ -392,11 +397,13 @@ void challengeState()
           currentNote = 1;
         }
       }
+      
       if (currentNote >= actualDistilledMelodyLength)
       {
-        setWinState();
+        setWinWaitState();
       }
     }
+
 
     if (buttonState == LOW)
     {
@@ -413,15 +420,31 @@ void challengeState()
       ledStates[i] = false;
       pushed[i] = false;
     }
+   
   }
   updateAll();
   
   stepCounter++;
 }
 
+void setWinWaitState()
+{
+  state = WINWAIT_STATE;
+  stepCounter = 0;
+}
+
+void winWaitState()
+{
+  stepCounter++;  
+  if(stepCounter > 2000)
+  {
+    setWinState();
+  }
+}
+
 void setWinState()
 {
-      Serial.println("GOING TO WIN STATE");
+  Serial.println("GOING TO WIN STATE");
 
   state = WIN_STATE;
   //timeCounter = 0;
@@ -447,7 +470,7 @@ void winState()
       for (int i = 0; i < sizeof(ledStates); i++)
       {
           if (!ledStates[i])
-          {
+          {   
               ledStates[i] = true;
               currentNoteToPlayInLoop = i;
               //audio.Play();
@@ -462,7 +485,7 @@ void winState()
       }
   }
 
-  if (currentNote >= 5)
+  if (currentNote >= 15)
   {
       // Clean memory
       EEPROM.write(0, 155);
