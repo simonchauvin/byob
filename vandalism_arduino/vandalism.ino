@@ -36,15 +36,17 @@ float lastLoopTime;
 
 int fps = 30;
 int fidelity = 30; // Times per seconds
-int minumumLength = 4; // Minimum length to hold on a note
-int melodyLength = 3;
+int minumumLength = 3; // Minimum length to hold on a note
+int melodyLength = 6;
+int maximumNotes = 10;
 int recordedMelody[300];
 int distilledMelody[300];
 int actualMelodyLength;
 int actualDistilledMelodyLength;
 int currentNoteToPlayInLoop;
 int lastNotePosition;
-
+int lastButtonPressed;
+int noteCounter;
 
 // the setup routine runs once when you press reset:
 void setup()
@@ -202,6 +204,7 @@ void setRecordState()
   state = RECORD_STATE;
   
   currentNote = 0;
+  noteCounter = 0;
 }
 
 void recordState()
@@ -213,12 +216,14 @@ void recordState()
   }
   
   //if (timeCounter >= melodyLength)
-  if (stepCounter >= actualMelodyLength)
+  if (stepCounter >= actualMelodyLength || noteCounter > maximumNotes)
   {
     writeMelodyToMemory();
     setPlaybackState();
     return;
   }
+  
+  
   currentNoteToPlayInLoop =-1;
   for (int i = 0; i < sizeof(buttons) / sizeof(int); i++)
   {
@@ -235,6 +240,13 @@ void recordState()
       // audio.pitch = 1 + (musicScale[i] * 1f/12f);
       //recordedMelody[(int)(timeCounter * fidelity)] = i + 1;
       recordedMelody[stepCounter] = i + 1;
+      
+      // prevent more than maximum notes
+      if(i != lastButtonPressed)
+      {
+         noteCounter++;
+      }
+      lastButtonPressed = i;
       break;
     }
     else
@@ -242,6 +254,7 @@ void recordState()
       ledStates[i] = false;
     }
   }
+  
   updateAll();
 }
 
@@ -278,6 +291,8 @@ void setPlaybackState()
       }
     }
     lastNote = recordedMelody[i];
+
+    // find the end of the melody
     if(recordedMelody[i] > 0)
     {
       lastNotePosition = i;
